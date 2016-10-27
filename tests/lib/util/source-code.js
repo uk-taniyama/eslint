@@ -889,7 +889,7 @@ describe("SourceCode", () => {
             };
         }
 
-        it("should attach them to all nodes", () => {
+        it("should return comments for all nodes", function() {
             const code = [
                 "// my line comment",
                 "var a = 42;",
@@ -906,7 +906,40 @@ describe("SourceCode", () => {
             eslint.verify(code, config, "", true);
         });
 
-        it("should not attach leading comments from previous node", () => {
+        it("should return trailing comments inside a block", function() {
+            const code = [
+                "{",
+                "    a();",
+                "    //comment",
+                "}"
+            ].join("\n");
+
+            eslint.reset();
+            eslint.on("Program", assertCommentCount(0, 0));
+            eslint.on("BlockStatement", assertCommentCount(0, 0));
+            eslint.on("ExpressionStatement", assertCommentCount(0, 1));
+            eslint.on("CallExpression", assertCommentCount(0, 0));
+            eslint.on("Identifier", assertCommentCount(0, 0));
+
+            eslint.verify(code, config, "", true);
+        });
+
+        it("should return comments within a conditional", function() {
+            const code = [
+                "/* foo */",
+                "if (/* bar */  a) {}"
+            ].join("\n");
+
+            eslint.reset();
+            eslint.on("Program", assertCommentCount(0, 0));
+            eslint.on("IfStatement", assertCommentCount(1, 0));
+            eslint.on("Identifier", assertCommentCount(1, 0));
+            eslint.on("BlockStatement", assertCommentCount(0, 0));
+
+            eslint.verify(code, config, "", true);
+        });
+
+        it("should not return comments within a previous node", function() {
             const code = [
                 "function a() {",
                 "    var b = {",
@@ -928,7 +961,81 @@ describe("SourceCode", () => {
             eslint.verify(code, config, "", true);
         });
 
-        it("should not attach duplicate leading comments from previous node", () => {
+        it("should return comments only for children of parent node", function() {
+            const code = [
+                "var foo = {",
+                "    bar: 'bar'",
+                "    // comment",
+                "};",
+                "var baz;"
+            ].join("\n");
+
+            eslint.reset();
+            eslint.on("Program", assertCommentCount(0, 0));
+            eslint.on("VariableDeclaration", assertCommentCount(0, 0));
+            eslint.on("VariableDeclerator", assertCommentCount(0, 0));
+            eslint.on("Identifier", assertCommentCount(0, 0));
+            eslint.on("ObjectExpression", assertCommentCount(0, 0));
+            eslint.on("Property", assertCommentCount(0, 1));
+            eslint.on("Literal", assertCommentCount(0, 0));
+
+            eslint.verify(code, config, "", true);
+        });
+
+        it("should return comments for an export default anonymous class", function() {
+            const code = [
+                "/**",
+                " * this is anonymous class.",
+                " */",
+                "export default class {",
+                "    /**",
+                "     * this is method1.",
+                "     */",
+                "    method1(){",
+                "    }",
+                "}"
+            ].join("\n");
+
+            eslint.reset();
+            eslint.on("Program", assertCommentCount(0, 0));
+            eslint.on("ExportDefaultDeclaration", assertCommentCount(1, 0));
+            eslint.on("ClassDeclaration", assertCommentCount(0, 0));
+            eslint.on("ClassBody", assertCommentCount(0, 0));
+            eslint.on("ClassBody", assertCommentCount(0, 0));
+            eslint.on("MethodDefinition", assertCommentCount(1, 0));
+            eslint.on("Identifier", assertCommentCount(0, 0));
+            eslint.on("FunctionExpression", assertCommentCount(0, 0));
+            eslint.on("BlockStatement", assertCommentCount(0, 0));
+
+            eslint.verify(code, config, "", true);
+        });
+
+        it("should return leading comments", function() {
+            const code = [
+                "//#!/usr/bin/env node",
+                "var a;",
+                "// foo",
+                "var b;",
+            ].join("\n");
+
+            eslint.reset();
+            eslint.on("Program", assertCommentCount(0, 0));
+            eslint.once("VariableDeclaration", () => {
+                assertCommentCount(1, 1);
+
+                eslint.once("VariableDeclaration", () => {
+                    assertCommentCount(1, 0);
+                });
+            });
+            eslint.on("VariableDeclarator", assertCommentCount(0, 0));
+            eslint.on("Identifier", assertCommentCount(0, 0));
+            eslint.on("VariableDeclarator", assertCommentCount(0, 0));
+            eslint.on("Identifier", assertCommentCount(0, 0));
+
+            eslint.verify(code, config, "", true);
+        });
+
+        it("should return mixture of line and block comments", function() {
             const code = [
                 "//foo",
                 "var zzz /*aaa*/ = 777;",
@@ -941,6 +1048,254 @@ describe("SourceCode", () => {
             eslint.on("VariableDeclarator", assertCommentCount(0, 0));
             eslint.on("Identifier", assertCommentCount(0, 1));
             eslint.on("Literal", assertCommentCount(1, 0));
+
+            eslint.verify(code, config, "", true);
+        });
+
+        it("should return comments surrounding a call expression", function() {
+            const code = [
+                "function a() {",
+                "    /* before */",
+                "    foo();",
+                "    /* after */",
+                "}"
+            ].join("\n");
+
+            eslint.reset();
+            eslint.on("Program", assertCommentCount(0, 0));
+            eslint.on("FunctionDeclaration", assertCommentCount(0, 0));
+            eslint.on("Identifier", assertCommentCount(0, 0));
+            eslint.on("BlockStatement", assertCommentCount(0, 0));
+            eslint.on("ExpressionStatement", assertCommentCount(1, 1));
+            eslint.on("CallExpression", assertCommentCount(0, 0));
+            eslint.on("Identifier", assertCommentCount(0, 0));
+
+            eslint.verify(code, config, "", true);
+        });
+
+        it("should return comments surrounding a debugger statement", function() {
+            const code = [
+                "function a() {",
+                "    /* before */",
+                "    debugger;",
+                "    /* after */",
+                "}"
+            ].join("\n");
+
+            eslint.reset();
+            eslint.on("Program", assertCommentCount(0, 0));
+            eslint.on("FunctionDeclaration", assertCommentCount(0, 0));
+            eslint.on("Identifier", assertCommentCount(0, 0));
+            eslint.on("BlockStatement", assertCommentCount(0, 0));
+            eslint.on("DebuggerStatement", assertCommentCount(1, 1));
+
+            eslint.verify(code, config, "", true);
+        });
+
+        it("should return comments surrounding a return statement", function() {
+            const code = [
+                "function a() {",
+                "    /* before */",
+                "    return;",
+                "    /* after */",
+                "}"
+            ].join("\n");
+
+            eslint.reset();
+            eslint.on("Program", assertCommentCount(0, 0));
+            eslint.on("FunctionDeclaration", assertCommentCount(0, 0));
+            eslint.on("Identifier", assertCommentCount(0, 0));
+            eslint.on("BlockStatement", assertCommentCount(0, 0));
+            eslint.on("ReturnStatement", assertCommentCount(1, 1));
+
+            eslint.verify(code, config, "", true);
+        });
+
+        it("should return comments surrounding a throw statement", function() {
+            const code = [
+                "function a() {",
+                "    /* before */",
+                "    throw 55;",
+                "    /* after */",
+                "}"
+            ].join("\n");
+
+            eslint.reset();
+            eslint.on("Program", assertCommentCount(0, 0));
+            eslint.on("FunctionDeclaration", assertCommentCount(0, 0));
+            eslint.on("Identifier", assertCommentCount(0, 0));
+            eslint.on("BlockStatement", assertCommentCount(0, 0));
+            eslint.on("ThrowStatement", assertCommentCount(1, 1));
+
+            eslint.verify(code, config, "", true);
+        });
+
+        it("should return comments surrounding a while loop", function() {
+            const code = [
+                "function f() {",
+                "    /* infinite */",
+                "    while (true) {}",
+                "    /* bar */",
+                "    var each;",
+                "}"
+            ].join("\n");
+
+            eslint.reset();
+            eslint.on("Program", assertCommentCount(0, 0));
+            eslint.on("FunctionDeclaration", assertCommentCount(0, 0));
+            eslint.once("Identifier", assertCommentCount(0, 0));
+            eslint.on("BlockStatement", assertCommentCount(0, 0));
+            eslint.on("WhileStatement", assertCommentCount(1, 1));
+            eslint.on("Literal", assertCommentCount(0, 0));
+            eslint.on("BlockStatement", assertCommentCount(0, 0));
+            eslint.on("VariableDeclaration", assertCommentCount(1, 0));
+            eslint.on("VariableDeclarator", assertCommentCount(0, 0));
+
+            eslint.verify(code, config, "", true);
+        });
+
+        it("should return switch case fallthrough comments in functions", function() {
+            const code = [
+                "function bar(foo) {",
+                "    switch(foo) {",
+                "    // foo",
+                "    case 1:",
+                "        // falls through",
+                "    case 2:",
+                "        doIt();",
+                "    }",
+                "}"
+            ].join("\n");
+
+            eslint.reset();
+            eslint.on("Program", assertCommentCount(0, 0));
+            eslint.on("FunctionDeclaration", assertCommentCount(0, 0));
+            eslint.once("Identifier", assertCommentCount(0, 0));
+            eslint.on("BlockStatement", assertCommentCount(0, 0));
+            eslint.on("SwitchStatement", assertCommentCount(0, 0));
+            eslint.once("SwitchCase", () => {
+                assertCommentCount(1, 1);
+
+                eslint.once("SwitchCase", () => {
+                    assertCommentCount(1, 0);
+                });
+            });
+            eslint.on("Literal", assertCommentCount(0, 0));
+            eslint.on("ExpressionStatement", assertCommentCount(0, 0));
+            eslint.on("CallExpression", assertCommentCount(0, 0));
+
+            eslint.verify(code, config, "", true);
+        });
+
+        it("should return switch case fallthrough comments", function() {
+            const code = [
+                "switch(foo) {",
+                "// foo",
+                "case 1:",
+                "    // falls through",
+                "case 2:",
+                "    doIt();",
+                "}",
+            ].join("\n");
+
+            eslint.reset();
+            eslint.on("Program", assertCommentCount(0, 0));
+            eslint.on("SwitchStatement", assertCommentCount(0, 0));
+            eslint.once("SwitchCase", () => {
+                assertCommentCount(1, 1);
+
+                eslint.once("SwitchCase", () => {
+                    assertCommentCount(1, 0);
+                });
+            });
+            eslint.on("Literal", assertCommentCount(0, 0));
+            eslint.on("ExpressionStatement", assertCommentCount(0, 0));
+            eslint.on("CallExpression", assertCommentCount(0, 0));
+
+            eslint.verify(code, config, "", true);
+        });
+
+        it("should return switch case no-default comments in functions", function() {
+            const code = [
+                "function bar(a) {",
+                "    switch (a) {",
+                "        case 2:",
+                "            break;",
+                "        case 1:",
+                "            break;",
+                "        //no default",
+                "    }",
+                "}"
+            ].join("\n");
+
+            eslint.reset();
+            eslint.on("Program", assertCommentCount(0, 0));
+            eslint.on("FunctionDeclaration", assertCommentCount(0, 0));
+            eslint.once("Identifier", assertCommentCount(0, 0));
+            eslint.on("BlockStatement", assertCommentCount(0, 0));
+            eslint.on("SwitchStatement", assertCommentCount(0, 0));
+            eslint.once("SwitchCase", assertCommentCount(0, 0));
+            eslint.once("BreakStatement", () => {
+                assertCommentCount(0, 0);
+
+                eslint.once("BreakStatement", () => {
+                    assertCommentCount(0, 1);
+                });
+            });
+            eslint.once("Literal", assertCommentCount(0, 0));
+
+            eslint.verify(code, config, "", true);
+        });
+
+        it("should return switch case no-default comments", function() {
+            const code = [
+                "switch (a) {",
+                "    case 1:",
+                "        break;",
+                "    //no default",
+                "}",
+            ].join("\n");
+
+            eslint.reset();
+            eslint.on("Program", assertCommentCount(0, 0));
+            eslint.on("SwitchStatement", assertCommentCount(0, 0));
+            eslint.on("Identifier", assertCommentCount(0, 0));
+            eslint.on("SwitchCase", assertCommentCount(0, 1));
+            eslint.on("BreakStatement", assertCommentCount(0, 0));
+            eslint.on("Literal", assertCommentCount(0, 0));
+
+            eslint.verify(code, config, "", true);
+        });
+
+        it("should return switch case no-default comments in nested functions", function() {
+            const code = [
+                "module.exports = function(context) {",
+                "    function isConstant(node) {",
+                "        switch (node.type) {",
+                "            case 'SequenceExpression':",
+                "                return isConstant(node.expressions[node.expressions.length - 1]);",
+                "            // no default",
+                "        }",
+                "        return false;",
+                "    }",
+                "};"
+            ].join("\n");
+
+            eslint.reset();
+            eslint.on("Program", assertCommentCount(0, 0));
+            eslint.on("ExpressionStatement", assertCommentCount(0, 0));
+            eslint.on("AssignmentExpression", assertCommentCount(0, 0));
+            eslint.on("MemberExpression", assertCommentCount(0, 0));
+            eslint.on("Identifier", assertCommentCount(0, 0));
+            eslint.on("FunctionExpression", assertCommentCount(0, 0));
+            eslint.on("BlockStatement", assertCommentCount(0, 0));
+            eslint.on("FunctionDeclaration", assertCommentCount(0, 0));
+            eslint.on("SwitchStatement", assertCommentCount(0, 0));
+            eslint.on("SwitchCase", assertCommentCount(0, 1));
+            eslint.on("ReturnStatement", assertCommentCount(0, 0));
+            eslint.on("CallExpression", assertCommentCount(0, 0));
+            eslint.on("BinaryExpression", assertCommentCount(0, 0));
+            eslint.on("Literal", assertCommentCount(0, 0));
 
             eslint.verify(code, config, "", true);
         });
