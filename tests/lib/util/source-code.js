@@ -1011,6 +1011,7 @@ describe("SourceCode", () => {
         });
 
         it("should return leading comments", function() {
+            let varDeclCount = 0;
             const code = [
                 "//#!/usr/bin/env node",
                 "var a;",
@@ -1020,12 +1021,11 @@ describe("SourceCode", () => {
 
             eslint.reset();
             eslint.on("Program", assertCommentCount(0, 0));
-            eslint.once("VariableDeclaration", () => {
-                assertCommentCount(1, 1);
-
-                eslint.once("VariableDeclaration", () => {
-                    assertCommentCount(1, 0);
-                });
+            eslint.on("VariableDeclaration", (node) => {
+                varDeclCount === 0
+                    ? assertCommentCount(1, 1)(node)
+                    : assertCommentCount(1, 0)(node);
+                varDeclCount++;
             });
             eslint.on("VariableDeclarator", assertCommentCount(0, 0));
             eslint.on("Identifier", assertCommentCount(0, 0));
@@ -1047,7 +1047,7 @@ describe("SourceCode", () => {
             eslint.on("VariableDeclaration", assertCommentCount(1, 1));
             eslint.on("VariableDeclarator", assertCommentCount(0, 0));
             eslint.on("Identifier", assertCommentCount(0, 1));
-            eslint.on("Literal", assertCommentCount(1, 0));
+            eslint.on("Literal", assertCommentCount(0, 0));
 
             eslint.verify(code, config, "", true);
         });
@@ -1143,7 +1143,7 @@ describe("SourceCode", () => {
             eslint.reset();
             eslint.on("Program", assertCommentCount(0, 0));
             eslint.on("FunctionDeclaration", assertCommentCount(0, 0));
-            eslint.once("Identifier", assertCommentCount(0, 0));
+            eslint.on("Identifier", assertCommentCount(0, 0));
             eslint.on("BlockStatement", assertCommentCount(0, 0));
             eslint.on("WhileStatement", assertCommentCount(1, 1));
             eslint.on("Literal", assertCommentCount(0, 0));
@@ -1155,6 +1155,7 @@ describe("SourceCode", () => {
         });
 
         it("should return switch case fallthrough comments in functions", function() {
+            let switchCaseCount = 0;
             const code = [
                 "function bar(foo) {",
                 "    switch(foo) {",
@@ -1170,15 +1171,14 @@ describe("SourceCode", () => {
             eslint.reset();
             eslint.on("Program", assertCommentCount(0, 0));
             eslint.on("FunctionDeclaration", assertCommentCount(0, 0));
-            eslint.once("Identifier", assertCommentCount(0, 0));
+            eslint.on("Identifier", assertCommentCount(0, 0));
             eslint.on("BlockStatement", assertCommentCount(0, 0));
             eslint.on("SwitchStatement", assertCommentCount(0, 0));
-            eslint.once("SwitchCase", () => {
-                assertCommentCount(1, 1);
-
-                eslint.once("SwitchCase", () => {
-                    assertCommentCount(1, 0);
-                });
+            eslint.on("SwitchCase", (node) => {
+                switchCaseCount === 0
+                    ? assertCommentCount(1, 1)(node)
+                    : assertCommentCount(1, 0)(node);
+                switchCaseCount++;
             });
             eslint.on("Literal", assertCommentCount(0, 0));
             eslint.on("ExpressionStatement", assertCommentCount(0, 0));
@@ -1188,6 +1188,7 @@ describe("SourceCode", () => {
         });
 
         it("should return switch case fallthrough comments", function() {
+            let switchCaseCount = 0;
             const code = [
                 "switch(foo) {",
                 "// foo",
@@ -1201,12 +1202,11 @@ describe("SourceCode", () => {
             eslint.reset();
             eslint.on("Program", assertCommentCount(0, 0));
             eslint.on("SwitchStatement", assertCommentCount(0, 0));
-            eslint.once("SwitchCase", () => {
-                assertCommentCount(1, 1);
-
-                eslint.once("SwitchCase", () => {
-                    assertCommentCount(1, 0);
-                });
+            eslint.on("SwitchCase", (node) => {
+                switchCaseCount === 0
+                    ? assertCommentCount(1, 1)(node)
+                    : assertCommentCount(1, 0)(node);
+                switchCaseCount++;
             });
             eslint.on("Literal", assertCommentCount(0, 0));
             eslint.on("ExpressionStatement", assertCommentCount(0, 0));
@@ -1216,6 +1216,7 @@ describe("SourceCode", () => {
         });
 
         it("should return switch case no-default comments in functions", function() {
+            let breakStatementCount = 0;
             const code = [
                 "function bar(a) {",
                 "    switch (a) {",
@@ -1231,18 +1232,17 @@ describe("SourceCode", () => {
             eslint.reset();
             eslint.on("Program", assertCommentCount(0, 0));
             eslint.on("FunctionDeclaration", assertCommentCount(0, 0));
-            eslint.once("Identifier", assertCommentCount(0, 0));
+            eslint.on("Identifier", assertCommentCount(0, 0));
             eslint.on("BlockStatement", assertCommentCount(0, 0));
             eslint.on("SwitchStatement", assertCommentCount(0, 0));
-            eslint.once("SwitchCase", assertCommentCount(0, 0));
-            eslint.once("BreakStatement", () => {
-                assertCommentCount(0, 0);
-
-                eslint.once("BreakStatement", () => {
-                    assertCommentCount(0, 1);
-                });
+            eslint.on("SwitchCase", (node) => {
+                breakStatementCount === 0
+                    ? assertCommentCount(0, 0)(node)
+                    : assertCommentCount(0, 1)(node);
+                breakStatementCount++;
             });
-            eslint.once("Literal", assertCommentCount(0, 0));
+            eslint.on("BreakStatement", assertCommentCount(0, 0));
+            eslint.on("Literal", assertCommentCount(0, 0));
 
             eslint.verify(code, config, "", true);
         });
@@ -1296,6 +1296,97 @@ describe("SourceCode", () => {
             eslint.on("CallExpression", assertCommentCount(0, 0));
             eslint.on("BinaryExpression", assertCommentCount(0, 0));
             eslint.on("Literal", assertCommentCount(0, 0));
+
+            eslint.verify(code, config, "", true);
+        });
+
+        it("should return trailing comments if the code only contains comments", function() {
+            const code = [
+                "//comment",
+                "/*another comment*/"
+            ].join("\n");
+
+            eslint.reset();
+            eslint.on("Program", assertCommentCount(2, 0));
+
+            eslint.verify(code, config, "", true);
+        });
+
+        it("should return trailing comments if a block statement only contains comments", function() {
+            const code = [
+                "{",
+                "    //comment",
+                "    /*another comment*/",
+                "}"
+            ].join("\n");
+
+            eslint.reset();
+            eslint.on("Program", assertCommentCount(0, 0));
+            eslint.on("BlockStatement", assertCommentCount(0, 2));
+
+            eslint.verify(code, config, "", true);
+        });
+
+        it("should return trailing comments if a class body only contains comments", function() {
+            const code = [
+                "class Foo {",
+                "    //comment",
+                "    /*another comment*/",
+                "}"
+            ].join("\n");
+
+            eslint.reset();
+            eslint.on("Program", assertCommentCount(0, 0));
+            eslint.on("ClassDeclaration", assertCommentCount(0, 0));
+            eslint.on("ClassBody", assertCommentCount(0, 2));
+
+            eslint.verify(code, config, "", true);
+        });
+
+        it("should return trailing comments if an object only contains comments", function() {
+            const code = [
+                "({",
+                "    //comment",
+                "    /*another comment*/",
+                "})"
+            ].join("\n");
+
+            eslint.reset();
+            eslint.on("Program", assertCommentCount(0, 0));
+            eslint.on("ExpressionStatement", assertCommentCount(0, 0));
+            eslint.on("ObjectExpression", assertCommentCount(0, 2));
+
+            eslint.verify(code, config, "", true);
+        });
+
+        it("should return trailing comments if an array only contains comments", function() {
+            const code = [
+                "[",
+                "    //comment",
+                "    /*another comment*/",
+                "]"
+            ].join("\n");
+
+            eslint.reset();
+            eslint.on("Program", assertCommentCount(0, 0));
+            eslint.on("ExpressionStatement", assertCommentCount(0, 0));
+            eslint.on("ArrayExpression", assertCommentCount(0, 2));
+
+            eslint.verify(code, config, "", true);
+        });
+
+        it("should return trailing comments if a switch statement only contains comments", function() {
+            const code = [
+                "switch (foo)",
+                "    //comment",
+                "    /*another comment*/",
+                "}"
+            ].join("\n");
+
+            eslint.reset();
+            eslint.on("Program", assertCommentCount(0, 0));
+            eslint.on("SwitchStatement", assertCommentCount(0, 2));
+            eslint.on("Identifier", assertCommentCount(0, 0));
 
             eslint.verify(code, config, "", true);
         });
@@ -1357,7 +1448,6 @@ describe("SourceCode", () => {
             assert.equal(lines[0], "a;");
             assert.equal(lines[1], "b;");
         });
-
     });
 
     describe("getText()", () => {

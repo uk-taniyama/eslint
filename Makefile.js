@@ -550,7 +550,7 @@ target.lint = function() {
 };
 
 target.test = function() {
-    target.lint();
+    // target.lint();
     target.checkRuleFiles();
     let errors = 0,
         lastReturn;
