@@ -1037,6 +1037,33 @@ describe("SourceCode", () => {
             eslint.verify(code, config, "", true);
         });
 
+        it("should not return shebang comments", () => {
+            let varDeclCount = 0;
+            const code = [
+                "#!/usr/bin/env node",
+                "var a;",
+                "// foo",
+                "var b;",
+            ].join("\n");
+
+            eslint.reset();
+            eslint.on("Program", assertCommentCount(0, 0));
+            eslint.on("VariableDeclaration", node => {
+                if (varDeclCount === 0) {
+                    assertCommentCount(0, 1)(node);
+                } else {
+                    assertCommentCount(1, 0)(node);
+                }
+                varDeclCount++;
+            });
+            eslint.on("VariableDeclarator", assertCommentCount(0, 0));
+            eslint.on("Identifier", assertCommentCount(0, 0));
+            eslint.on("VariableDeclarator", assertCommentCount(0, 0));
+            eslint.on("Identifier", assertCommentCount(0, 0));
+
+            eslint.verify(code, config, "", true);
+        });
+
         it("should return mixture of line and block comments", () => {
             const code = [
                 "//foo",
