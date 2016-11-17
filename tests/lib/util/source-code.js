@@ -1412,7 +1412,7 @@ describe("SourceCode", () => {
 
         it("should return trailing comments if a switch statement only contains comments", () => {
             const code = [
-                "switch (foo)",
+                "switch (foo) {",
                 "    //comment",
                 "    /*another comment*/",
                 "}"
