@@ -147,12 +147,22 @@ describe("SourceCode", () => {
         });
 
         describe("when a text has a shebang", () => {
-            it("it should change the type of the first comment to \"Shebang\"", () => {
-                const ast = { comments: [{ type: "Line", value: "/usr/bin/env node", range: [0, 19] }], tokens: [], loc: {}, range: [] };
-                const sourceCode = new SourceCode("#!/usr/bin/env node\nconsole.log('hello');", ast);
-                const firstCommentToken = sourceCode.getAllComments()[0];
+            let sourceCode;
 
-                assert.deepEqual(firstCommentToken.type, "Shebang");
+            beforeEach(() => {
+                const ast = { comments: [{ type: "Line", value: "/usr/bin/env node", range: [0, 19] }], tokens: [], loc: {}, range: [] };
+
+                sourceCode = new SourceCode("#!/usr/bin/env node\nconsole.log('hello');", ast);
+            });
+
+            it("it should change the type of the first comment to \"Shebang\"", () => {
+                const firstToken = sourceCode.tokensAndComments[0];
+
+                assert.deepEqual(firstToken.type, "Shebang");
+            });
+
+            it("should remove the shebang from the AST's comments array", () => {
+                assert.equal(sourceCode.ast.comments.length, 0);
             });
         });
 
@@ -160,9 +170,9 @@ describe("SourceCode", () => {
             it("it should not change the type of the first comment", () => {
                 const ast = { comments: [{ type: "Line", value: "comment", range: [0, 9] }], tokens: [], loc: {}, range: [] };
                 const sourceCode = new SourceCode("//comment\nconsole.log('hello');", ast);
-                const firstCommentToken = sourceCode.getAllComments()[0];
+                const firstToken = sourceCode.tokensAndComments[0];
 
-                assert.deepEqual(firstCommentToken.type, "Line");
+                assert.deepEqual(firstToken.type, "Line");
             });
         });
 
