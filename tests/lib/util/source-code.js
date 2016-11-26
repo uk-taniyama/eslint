@@ -146,6 +146,26 @@ describe("SourceCode", () => {
             });
         });
 
+        describe("when a text has a shebang", () => {
+            it("it should the type of the first comment to \"Shebang\"", () => {
+                const ast = { comments: [{ type: "Line", value: "/usr/bin/env node", range: [0, 19] }], tokens: [], loc: {}, range: [] };
+                const sourceCode = new SourceCode("#!/usr/bin/env node\nconsole.log('hello');", ast);
+                const firstCommentToken = sourceCode.getAllComments()[0];
+
+                assert.deepEqual(firstCommentToken.type, "Shebang");
+            });
+        });
+
+        describe("when a text does not have a shebang", () => {
+            it("it should not change the type of the first comment", () => {
+                const ast = { comments: [{ type: "Line", value: "comment", range: [0, 9] }], tokens: [], loc: {}, range: [] };
+                const sourceCode = new SourceCode("//comment\nconsole.log('hello');", ast);
+                const firstCommentToken = sourceCode.getAllComments()[0];
+
+                assert.deepEqual(firstCommentToken.type, "Line");
+            });
+        });
+
         describe("when it read a UTF-8 file (has BOM), SourceCode", () => {
             const UTF8_FILE = path.resolve(__dirname, "../../fixtures/utf8-bom.js");
             const text = fs.readFileSync(
