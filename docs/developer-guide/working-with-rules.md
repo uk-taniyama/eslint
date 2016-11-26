@@ -345,7 +345,7 @@ var nodeSourceWithFollowing = sourceCode.getText(node, 0, 2);
 
 In this way, you can look for patterns in the JavaScript text itself when the AST isn't providing the appropriate data (such as location of commas, semicolons, parentheses, etc.).
 
-### Accessing comments
+### Accessing Comments
 
 If you need to access comments for a specific node you can use `sourceCode.getComments(node)`:
 
@@ -357,9 +357,11 @@ var comments = sourceCode.getComments(node);
 
 Keep in mind that comments are technically not a part of the AST and are only attached to it on demand, i.e. when you call `getComments()`.
 
-Shebangs are not included in the results of `getComments()`. Use `sourceCode.getTokenOrCommentBefore()` or `source.getAllComments()` if you need to access the shebang comment token.
-
 **Note:** One of the libraries adds AST node properties for comments - do not use these properties. Always use `sourceCode.getComments()` as this is the only guaranteed API for accessing comments (we will likely change how comments are handled later).
+
+### Accessing Shebangs
+
+Shebangs are not included in the results of `sourceCode.getComments(node)` or `souceCode.getAllComments(node)`. Use `sourceCode.getTokenOrCommentBefore(node)` if you need to access the shebang token.
 
 ### Accessing Code Paths
 
