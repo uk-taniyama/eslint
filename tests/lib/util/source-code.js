@@ -147,7 +147,7 @@ describe("SourceCode", () => {
         });
 
         describe("when a text has a shebang", () => {
-            it("it should the type of the first comment to \"Shebang\"", () => {
+            it("it should change the type of the first comment to \"Shebang\"", () => {
                 const ast = { comments: [{ type: "Line", value: "/usr/bin/env node", range: [0, 19] }], tokens: [], loc: {}, range: [] };
                 const sourceCode = new SourceCode("#!/usr/bin/env node\nconsole.log('hello');", ast);
                 const firstCommentToken = sourceCode.getAllComments()[0];
@@ -909,11 +909,11 @@ describe("SourceCode", () => {
             };
         }
 
-        it("should return comments for all nodes", () => {
+        it("should return comments around nodes", () => {
             const code = [
-                "// my line comment",
+                "// Leading comment for VariableDeclaration",
                 "var a = 42;",
-                "/* my block comment */"
+                "/* Trailing comment for VariableDeclaration */"
             ].join("\n");
 
             eslint.reset();
@@ -930,7 +930,7 @@ describe("SourceCode", () => {
             const code = [
                 "{",
                 "    a();",
-                "    //comment",
+                "    // Trailing comment for ExpressionStatement",
                 "}"
             ].join("\n");
 
@@ -946,8 +946,8 @@ describe("SourceCode", () => {
 
         it("should return comments within a conditional", () => {
             const code = [
-                "/* foo */",
-                "if (/* bar */  a) {}"
+                "/* Leading comment for IfStatement */",
+                "if (/* Leading comment for Identifier */  a) {}"
             ].join("\n");
 
             eslint.reset();
@@ -963,7 +963,7 @@ describe("SourceCode", () => {
             const code = [
                 "function a() {",
                 "    var b = {",
-                "        // comment",
+                "        // Trailing comment for ObjectExpression",
                 "    };",
                 "    return b;",
                 "}"
@@ -985,7 +985,7 @@ describe("SourceCode", () => {
             const code = [
                 "var foo = {",
                 "    bar: 'bar'",
-                "    // comment",
+                "    // Trailing comment for Property",
                 "};",
                 "var baz;"
             ].join("\n");
@@ -1005,11 +1005,11 @@ describe("SourceCode", () => {
         it("should return comments for an export default anonymous class", () => {
             const code = [
                 "/**",
-                " * this is anonymous class.",
+                " * Leading comment for ExportDefaultDeclaration",
                 " */",
                 "export default class {",
                 "    /**",
-                "     * this is method1.",
+                "     * Leading comment for MethodDefinition",
                 "     */",
                 "    method1(){",
                 "    }",
@@ -1020,7 +1020,6 @@ describe("SourceCode", () => {
             eslint.on("Program", assertCommentCount(0, 0));
             eslint.on("ExportDefaultDeclaration", assertCommentCount(1, 0));
             eslint.on("ClassDeclaration", assertCommentCount(0, 0));
-            eslint.on("ClassBody", assertCommentCount(0, 0));
             eslint.on("ClassBody", assertCommentCount(0, 0));
             eslint.on("MethodDefinition", assertCommentCount(1, 0));
             eslint.on("Identifier", assertCommentCount(0, 0));
@@ -1033,9 +1032,9 @@ describe("SourceCode", () => {
         it("should return leading comments", () => {
             let varDeclCount = 0;
             const code = [
-                "//#!/usr/bin/env node",
+                "// Leading comment for first VariableDeclaration",
                 "var a;",
-                "// foo",
+                "// Leading comment for previous VariableDeclaration and trailing comment for next VariableDeclaration",
                 "var b;",
             ].join("\n");
 
@@ -1051,8 +1050,6 @@ describe("SourceCode", () => {
             });
             eslint.on("VariableDeclarator", assertCommentCount(0, 0));
             eslint.on("Identifier", assertCommentCount(0, 0));
-            eslint.on("VariableDeclarator", assertCommentCount(0, 0));
-            eslint.on("Identifier", assertCommentCount(0, 0));
 
             eslint.verify(code, config, "", true);
         });
@@ -1062,7 +1059,7 @@ describe("SourceCode", () => {
             const code = [
                 "#!/usr/bin/env node",
                 "var a;",
-                "// foo",
+                "// Leading comment for previous VariableDeclaration and trailing comment for next VariableDeclaration",
                 "var b;",
             ].join("\n");
 
@@ -1078,17 +1075,15 @@ describe("SourceCode", () => {
             });
             eslint.on("VariableDeclarator", assertCommentCount(0, 0));
             eslint.on("Identifier", assertCommentCount(0, 0));
-            eslint.on("VariableDeclarator", assertCommentCount(0, 0));
-            eslint.on("Identifier", assertCommentCount(0, 0));
 
             eslint.verify(code, config, "", true);
         });
 
         it("should return mixture of line and block comments", () => {
             const code = [
-                "//foo",
-                "var zzz /*aaa*/ = 777;",
-                "//bar"
+                "// Leading comment for VariableDeclaration",
+                "var zzz /* Trailing comment for Identifier */ = 777;",
+                "// Trailing comment for VariableDeclaration",
             ].join("\n");
 
             eslint.reset();
@@ -1104,9 +1099,9 @@ describe("SourceCode", () => {
         it("should return comments surrounding a call expression", () => {
             const code = [
                 "function a() {",
-                "    /* before */",
+                "    /* Leading comment for ExpressionStatement */",
                 "    foo();",
-                "    /* after */",
+                "    /* Trailing comment for ExpressionStatement */",
                 "}"
             ].join("\n");
 
@@ -1117,7 +1112,6 @@ describe("SourceCode", () => {
             eslint.on("BlockStatement", assertCommentCount(0, 0));
             eslint.on("ExpressionStatement", assertCommentCount(1, 1));
             eslint.on("CallExpression", assertCommentCount(0, 0));
-            eslint.on("Identifier", assertCommentCount(0, 0));
 
             eslint.verify(code, config, "", true);
         });
@@ -1125,9 +1119,9 @@ describe("SourceCode", () => {
         it("should return comments surrounding a debugger statement", () => {
             const code = [
                 "function a() {",
-                "    /* before */",
+                "    /* Leading comment for DebuggerStatement */",
                 "    debugger;",
-                "    /* after */",
+                "    /* Trailing comment for DebuggerStatement */",
                 "}"
             ].join("\n");
 
@@ -1144,9 +1138,9 @@ describe("SourceCode", () => {
         it("should return comments surrounding a return statement", () => {
             const code = [
                 "function a() {",
-                "    /* before */",
+                "    /* Leading comment for ReturnStatement */",
                 "    return;",
-                "    /* after */",
+                "    /* Trailing comment for ReturnStatement */",
                 "}"
             ].join("\n");
 
@@ -1163,9 +1157,9 @@ describe("SourceCode", () => {
         it("should return comments surrounding a throw statement", () => {
             const code = [
                 "function a() {",
-                "    /* before */",
+                "    /* Leading comment for ThrowStatement */",
                 "    throw 55;",
-                "    /* after */",
+                "    /* Trailing comment for ThrowStatement */",
                 "}"
             ].join("\n");
 
@@ -1182,9 +1176,9 @@ describe("SourceCode", () => {
         it("should return comments surrounding a while loop", () => {
             const code = [
                 "function f() {",
-                "    /* infinite */",
+                "    /* Leading comment for WhileStatement */",
                 "    while (true) {}",
-                "    /* bar */",
+                "    /* Trailing comment for WhileStatement and leading comment for VariableDeclaration */",
                 "    var each;",
                 "}"
             ].join("\n");
@@ -1196,7 +1190,6 @@ describe("SourceCode", () => {
             eslint.on("BlockStatement", assertCommentCount(0, 0));
             eslint.on("WhileStatement", assertCommentCount(1, 1));
             eslint.on("Literal", assertCommentCount(0, 0));
-            eslint.on("BlockStatement", assertCommentCount(0, 0));
             eslint.on("VariableDeclaration", assertCommentCount(1, 0));
             eslint.on("VariableDeclarator", assertCommentCount(0, 0));
 
@@ -1208,9 +1201,9 @@ describe("SourceCode", () => {
             const code = [
                 "function bar(foo) {",
                 "    switch(foo) {",
-                "    // foo",
+                "    /* Leading comment for SwitchCase */",
                 "    case 1:",
-                "        // falls through",
+                "        // falls through", // Trailing comment for previous SwitchCase and leading comment for next SwitchCase
                 "    case 2:",
                 "        doIt();",
                 "    }",
@@ -1242,9 +1235,9 @@ describe("SourceCode", () => {
             let switchCaseCount = 0;
             const code = [
                 "switch(foo) {",
-                "// foo",
+                "    /* Leading comment for SwitchCase */",
                 "case 1:",
-                "    // falls through",
+                "    // falls through", // Trailing comment for previous SwitchCase and leading comment for next SwitchCase
                 "case 2:",
                 "    doIt();",
                 "}",
@@ -1277,7 +1270,7 @@ describe("SourceCode", () => {
                 "            break;",
                 "        case 1:",
                 "            break;",
-                "        //no default",
+                "        // no default", // Trailing comment for SwitchCase
                 "    }",
                 "}"
             ].join("\n");
@@ -1307,7 +1300,7 @@ describe("SourceCode", () => {
                 "switch (a) {",
                 "    case 1:",
                 "        break;",
-                "    //no default",
+                "    // no default", // Trailing comment for SwitchCase
                 "}",
             ].join("\n");
 
@@ -1329,7 +1322,7 @@ describe("SourceCode", () => {
                 "        switch (node.type) {",
                 "            case 'SequenceExpression':",
                 "                return isConstant(node.expressions[node.expressions.length - 1]);",
-                "            // no default",
+                "            // no default", // Trailing comment for SwitchCase
                 "        }",
                 "        return false;",
                 "    }",
@@ -1445,6 +1438,35 @@ describe("SourceCode", () => {
 
             eslint.verify(code, config, "", true);
         });
+
+        it("should return comments for multiple declarations with a single variable", () => {
+            let varDeclCount = 0;
+            const code = [
+                "// Leading comment for VariableDeclaration",
+                "var a, // Leading comment for next VariableDeclarator",
+                "    b, // Leading comment for next VariableDeclarator",
+                "    c; // Trailing comment for VariableDeclaration",
+                "// Trailing comment for VariableDeclaration"
+            ].join("\n");
+
+            eslint.reset();
+            eslint.on("Program", assertCommentCount(0, 0));
+            eslint.on("VariableDeclaration", assertCommentCount(1, 2));
+            eslint.on("VariableDeclarator", node => {
+                if (varDeclCount === 0) {
+                    assertCommentCount(0, 0)(node);
+                } else if (varDeclCount === 1) {
+                    assertCommentCount(1, 0)(node);
+                } else {
+                    assertCommentCount(1, 0)(node);
+                }
+                varDeclCount++;
+            });
+            eslint.on("Identifier", assertCommentCount(0, 0));
+
+            eslint.verify(code, config, "", true);
+        });
+
     });
 
     describe("getLines()", () => {
