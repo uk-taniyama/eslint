@@ -1477,6 +1477,21 @@ describe("SourceCode", () => {
             eslint.verify(code, config, "", true);
         });
 
+        it("should return comments when comments exist between var keyword and VariableDeclarator", () => {
+            const code = [
+                "var // Leading comment for VariableDeclarator",
+                "    // Leading comment for VariableDeclarator",
+                "    a;"
+            ].join("\n");
+
+            eslint.reset();
+            eslint.on("Program", assertCommentCount(0, 0));
+            eslint.on("VariableDeclaration", assertCommentCount(0, 0));
+            eslint.on("VariableDeclarator", assertCommentCount(2, 0));
+            eslint.on("Identifier", assertCommentCount(0, 0));
+
+            eslint.verify(code, config, "", true);
+        });
     });
 
     describe("getLines()", () => {
