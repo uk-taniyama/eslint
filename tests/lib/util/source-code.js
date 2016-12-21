@@ -30,7 +30,8 @@ const DEFAULT_CONFIG = {
 };
 
 const AST = espree.parse("let foo = bar;", DEFAULT_CONFIG),
-    TEST_CODE = "var answer = 6 * 7;";
+    TEST_CODE = "var answer = 6 * 7;",
+    SHEBANG_TEST_CODE = `#!/usr/bin/env node\n${TEST_CODE}`;
 
 //------------------------------------------------------------------------------
 // Tests
@@ -152,17 +153,13 @@ describe("SourceCode", () => {
             beforeEach(() => {
                 const ast = { comments: [{ type: "Line", value: "/usr/bin/env node", range: [0, 19] }], tokens: [], loc: {}, range: [] };
 
-                sourceCode = new SourceCode("#!/usr/bin/env node\nconsole.log('hello');", ast);
+                sourceCode = new SourceCode(SHEBANG_TEST_CODE, ast);
             });
 
             it("it should change the type of the first comment to \"Shebang\"", () => {
-                const firstToken = sourceCode.tokensAndComments[0];
+                const firstToken = sourceCode.getAllComments()[0];
 
                 assert.deepEqual(firstToken.type, "Shebang");
-            });
-
-            it("should remove the shebang from the AST's comments array", () => {
-                assert.equal(sourceCode.ast.comments.length, 0);
             });
         });
 
@@ -170,7 +167,7 @@ describe("SourceCode", () => {
             it("it should not change the type of the first comment", () => {
                 const ast = { comments: [{ type: "Line", value: "comment", range: [0, 9] }], tokens: [], loc: {}, range: [] };
                 const sourceCode = new SourceCode("//comment\nconsole.log('hello');", ast);
-                const firstToken = sourceCode.tokensAndComments[0];
+                const firstToken = sourceCode.getAllComments()[0];
 
                 assert.deepEqual(firstToken.type, "Line");
             });
@@ -1064,10 +1061,10 @@ describe("SourceCode", () => {
             eslint.verify(code, config, "", true);
         });
 
-        it("should not return shebang comments", () => {
+        it("should return shebang comments", () => {
             let varDeclCount = 0;
             const code = [
-                "#!/usr/bin/env node",
+                "#!/usr/bin/env node", // Leading comment for following VariableDeclaration
                 "var a;",
                 "// Leading comment for previous VariableDeclaration and trailing comment for next VariableDeclaration",
                 "var b;",
@@ -1077,7 +1074,7 @@ describe("SourceCode", () => {
             eslint.on("Program", assertCommentCount(0, 0));
             eslint.on("VariableDeclaration", node => {
                 if (varDeclCount === 0) {
-                    assertCommentCount(0, 1)(node);
+                    assertCommentCount(1, 1)(node);
                 } else {
                     assertCommentCount(1, 0)(node);
                 }
@@ -1086,6 +1083,14 @@ describe("SourceCode", () => {
             eslint.on("VariableDeclarator", assertCommentCount(0, 0));
             eslint.on("Identifier", assertCommentCount(0, 0));
 
+            eslint.verify(code, config, "", true);
+        });
+
+        it("should include shebang comment when program only contains shebang", () => {
+            const code = "#!/usr/bin/env node";
+
+            eslint.reset();
+            eslint.on("Program", assertCommentCount(1, 0));
             eslint.verify(code, config, "", true);
         });
 
@@ -1556,6 +1561,21 @@ describe("SourceCode", () => {
 
         let sourceCode,
             ast;
+
+        describe("when text begins with a shebang", () => {
+            it("should retrieve unaltered shebang text", () => {
+
+                // Shebangs are normalized to line comments before parsing.
+                ast = espree.parse(SHEBANG_TEST_CODE.replace(/^#!([^\r\n]+)/, (match, captured) => `//${captured}`), DEFAULT_CONFIG);
+                sourceCode = new SourceCode(SHEBANG_TEST_CODE, ast);
+
+                const shebangToken = sourceCode.getAllComments()[0];
+                const shebangText = sourceCode.getText(shebangToken);
+
+                assert.equal(shebangToken.type, "Shebang");
+                assert.equal(shebangText, "#!/usr/bin/env node");
+            });
+        });
 
         beforeEach(() => {
             ast = espree.parse(TEST_CODE, DEFAULT_CONFIG);

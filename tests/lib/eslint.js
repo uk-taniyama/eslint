@@ -2607,13 +2607,14 @@ describe("eslint", () => {
             assert.equal(messages[0].line, 3);
         });
 
-        it("should not have a comment with the shebang in it", () => {
+        it("should have a comment with the shebang in it", () => {
             const config = { rules: { "no-extra-semi": 1 } };
 
             eslint.reset();
 
             eslint.on("Program", node => {
-                assert.equal(node.comments.length, 0);
+                assert.equal(node.comments.length, 1);
+                assert.equal(node.comments[0].type, "Shebang");
 
                 let comments = eslint.getComments(node);
 
@@ -2621,13 +2622,26 @@ describe("eslint", () => {
                 assert.equal(comments.trailing.length, 0);
 
                 comments = eslint.getComments(node.body[0]);
-                assert.equal(comments.leading.length, 0);
+                assert.equal(comments.leading.length, 1);
                 assert.equal(comments.trailing.length, 0);
+                assert.equal(comments.leading[0].type, "Shebang");
             });
             eslint.verify(code, config, "foo.js", true);
         });
 
-        it("should not fire a LineComment event for a comment with the shebang in it", () => {
+        it("should fire a ShebangComment event for a comment with a shebang in it", () => {
+            const config = { rules: { "no-extra-semi": 1 } };
+            const spyShebang = sinon.spy();
+
+            eslint.reset();
+
+            eslint.on("ShebangComment", spyShebang);
+            eslint.verify(code, config, "foo.js", true);
+
+            sinon.assert.calledOnce(spyShebang);
+        });
+
+        it("should not fire a LineComment event for a comment with a shebang in it", () => {
             const config = { rules: { "no-extra-semi": 1 } };
 
             eslint.reset();

@@ -361,7 +361,7 @@ Keep in mind that comments are technically not a part of the AST and are only at
 
 ### Accessing Shebangs
 
-Shebangs are not included in the results of `sourceCode.getComments(node)` or `souceCode.getAllComments(node)`. Use `sourceCode.getTokenOrCommentBefore(node)` if you need to access the shebang token.
+Shebangs are represented by tokens of type `"Shebang"` and are treated as comments. They can be accessed via `sourceCode.getTokenOrCommentBefore(node)`, `sourceCode.getComments(node)`, and `sourceCode.getAllComments(node)`.
 
 ### Accessing Code Paths
 
