@@ -471,6 +471,46 @@ describe("ast-utils", () => {
         });
     });
 
+    describe("isComment", () => {
+        it("should return true for LineComment", () => {
+            const text = "// comment\nvar foo;";
+            const ast = espree.parse(text, ESPREE_CONFIG);
+            const sourceCode = new SourceCode(text, ast);
+            const token = sourceCode.getAllComments()[0];
+
+            assert(token.type, "LineComment");
+            assert(astUtils.isComment(token));
+        });
+
+        it("should return true for BlockComment", () => {
+            const text = "/* comment */\nvar foo;";
+            const ast = espree.parse(text, ESPREE_CONFIG);
+            const sourceCode = new SourceCode(text, ast);
+            const token = sourceCode.getAllComments()[0];
+
+            assert(token.type, "BlockComment");
+            assert(astUtils.isComment(token));
+        });
+
+        it("should return true for ShebangComment", () => {
+            const text = "#!/usr/bin/env node\nvar foo;";
+            const ast = espree.parse(text.replace(/^#!([^\r\n]+)/, (match, captured) => `//${captured}`), ESPREE_CONFIG);
+            const sourceCode = new SourceCode(text, ast);
+            const token = sourceCode.getAllComments()[0];
+
+            assert(token.type, "ShebangComment");
+            assert(astUtils.isComment(token));
+        });
+
+        it("should return false for non-comment tokens", () => {
+            const ast = espree.parse("var foo;", ESPREE_CONFIG);
+            const token = ast.tokens[0];
+
+            assert(token.type, "Keyword");
+            assert(!astUtils.isComment(token));
+        });
+    });
+
     describe("getStaticPropertyName", () => {
         it("should return 'b' for `a.b`", () => {
             const ast = espree.parse("a.b");
