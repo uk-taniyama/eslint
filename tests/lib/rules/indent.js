@@ -2692,6 +2692,26 @@ foo.bar('baz', function(err) {
 `,
             options: [2, { CallExpression: { arguments: "first" } }]
         },
+        {
+            code: `\
+foo.bar(function() {
+  cookies;
+}).baz(function() {
+  cookies;
+});
+`,
+            options: [2, { MemberExpression: 1 }]
+        },
+        {
+            code: `\
+foo.bar().baz(function() {
+  cookies;
+}).qux(function() {
+  cookies;
+});
+`,
+            options: [2, { MemberExpression: 1 }]
+        }
     ],
 
 
@@ -5397,5 +5417,37 @@ foo.bar('baz', function(err) {
             options: [2, { CallExpression: { arguments: "first" } }],
             errors: expectedErrors([2, 2, 10, "Identifier"])
         },
+        {
+            code: `\
+foo.bar(function() {
+  cookies;
+}).baz(function() {
+    cookies;
+  });`,
+            output: `\
+foo.bar(function() {
+  cookies;
+}).baz(function() {
+  cookies;
+});`,
+            options: [2, { MemberExpression: 1 }],
+            errors: expectedErrors([[4, 2, 4, "Identifier"], [5, 0, 2, "Punctuator"]])
+        },
+        {
+            code: `\
+foo.bar().baz(function() {
+  cookies;
+}).qux(function() {
+    cookies;
+  });`,
+            output: `\
+foo.bar().baz(function() {
+  cookies;
+}).qux(function() {
+  cookies;
+});`,
+            options: [2, { MemberExpression: 1 }],
+            errors: expectedErrors([[4, 2, 4, "Identifier"], [5, 0, 2, "Punctuator"]])
+        }
     ]
 });
