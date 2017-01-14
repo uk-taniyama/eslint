@@ -1042,7 +1042,7 @@ describe("SourceCode", () => {
                 "// Leading comment for first VariableDeclaration",
                 "var a;",
                 "// Leading comment for previous VariableDeclaration and trailing comment for next VariableDeclaration",
-                "var b;",
+                "var b;"
             ].join("\n");
 
             eslint.reset();
@@ -1067,7 +1067,7 @@ describe("SourceCode", () => {
                 "#!/usr/bin/env node", // Leading comment for following VariableDeclaration
                 "var a;",
                 "// Leading comment for previous VariableDeclaration and trailing comment for next VariableDeclaration",
-                "var b;",
+                "var b;"
             ].join("\n");
 
             eslint.reset();
@@ -1098,7 +1098,7 @@ describe("SourceCode", () => {
             const code = [
                 "// Leading comment for VariableDeclaration",
                 "var zzz /* Trailing comment for Identifier */ = 777;",
-                "// Trailing comment for VariableDeclaration",
+                "// Trailing comment for VariableDeclaration"
             ].join("\n");
 
             eslint.reset();
@@ -1255,7 +1255,7 @@ describe("SourceCode", () => {
                 "    // falls through", // Trailing comment for previous SwitchCase and leading comment for next SwitchCase
                 "case 2:",
                 "    doIt();",
-                "}",
+                "}"
             ].join("\n");
 
             eslint.reset();
@@ -1316,7 +1316,7 @@ describe("SourceCode", () => {
                 "    case 1:",
                 "        break;",
                 "    // no default", // Trailing comment for SwitchCase
-                "}",
+                "}"
             ].join("\n");
 
             eslint.reset();

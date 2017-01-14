@@ -2628,27 +2628,6 @@ describe("eslint", () => {
             });
             eslint.verify(code, config, "foo.js", true);
         });
-
-        it("should fire a ShebangComment event for a comment with a shebang in it", () => {
-            const config = { rules: { "no-extra-semi": 1 } };
-            const spyShebang = sinon.spy();
-
-            eslint.reset();
-
-            eslint.on("ShebangComment", spyShebang);
-            eslint.verify(code, config, "foo.js", true);
-
-            sinon.assert.calledOnce(spyShebang);
-        });
-
-        it("should not fire a LineComment event for a comment with a shebang in it", () => {
-            const config = { rules: { "no-extra-semi": 1 } };
-
-            eslint.reset();
-
-            eslint.on("LineComment", sandbox.mock().never());
-            eslint.verify(code, config, "foo.js", true);
-        });
     });
 
     describe("when evaluating broken code", () => {
@@ -2887,7 +2866,6 @@ describe("eslint", () => {
     });
 
     describe("when evaluating code with comments to change config when allowInlineConfig is enabled", () => {
-
         it("should report a violation for disabling rules", () => {
             const code = [
                 "alert('test'); // eslint-disable-line no-alert"
@@ -3034,7 +3012,6 @@ describe("eslint", () => {
     });
 
     describe("when evaluating code with comments to change config when allowInlineConfig is disabled", () => {
-
         it("should not report a violation", () => {
             const code = [
                 "alert('test'); // eslint-disable-line no-alert"
@@ -3054,38 +3031,6 @@ describe("eslint", () => {
         });
     });
 
-    describe("when evaluating code with code comments", () => {
-
-        it("should emit enter only once for each comment", () => {
-
-            const code = "a; /*zz*/ b;";
-
-            const config = { rules: {} },
-                spy = sandbox.spy();
-
-            eslint.reset();
-            eslint.on("BlockComment", spy);
-
-            eslint.verify(code, config, filename, true);
-            assert.equal(spy.calledOnce, true);
-        });
-
-        it("should emit exit only once for each comment", () => {
-
-            const code = "a; //zz\n b;";
-
-            const config = { rules: {} },
-                spy = sandbox.spy();
-
-            eslint.reset();
-            eslint.on("LineComment:exit", spy);
-
-            eslint.verify(code, config, filename, true);
-            assert.equal(spy.calledOnce, true);
-        });
-
-    });
-
     describe("when evaluating code with hashbang", () => {
         it("should comment hashbang without breaking offset", () => {
 
@@ -3100,7 +3045,6 @@ describe("eslint", () => {
 
             eslint.verify(code, config, filename, true);
         });
-
     });
 
     describe("verify()", () => {
