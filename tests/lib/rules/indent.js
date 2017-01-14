@@ -2666,6 +2666,23 @@ foo ?
             beep
 `,
             options: [4, { flatTernaryExpressions: false }]
+        },
+        {
+            code: "[,]",
+            options: [2, { ArrayExpression: "first" }]
+        },
+        {
+            code: `\
+[
+    ,
+    foo
+]
+`,
+            options: [4, { ArrayExpression: "first" }]
+        },
+        {
+            code: "[sparse, , array];",
+            options: [2, { ArrayExpression: "first" }]
         }
     ],
 
