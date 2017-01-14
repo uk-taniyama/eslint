@@ -2711,6 +2711,18 @@ foo.bar().baz(function() {
 });
 `,
             options: [2, { MemberExpression: 1 }]
+        },
+        {
+            code: `\
+(
+  {
+    foo: 1,
+    baz: 2
+  }
+);
+`,
+            options: [2, { ObjectExpression: "first" }],
+            parserOptions: { ecmaVersion: 6 }
         }
     ],
 
@@ -3769,7 +3781,7 @@ var a = 1
     ,b = 2
 ;`,
             errors: expectedErrors([
-                [2, 4, 3, "Punctuator"],
+                [2, 4, 3, "Punctuator"]
             ])
         },
         {
@@ -5183,9 +5195,9 @@ echo = spawn('cmd.exe',
             output: `\
 echo = spawn('cmd.exe',
              ['foo', 'bar',
-             'baz']);`,
+              'baz']);`,
             options: [2, { ArrayExpression: "first", CallExpression: { arguments: "first" } }],
-            errors: expectedErrors([[2, 13, 12, "Punctuator"]])
+            errors: expectedErrors([[2, 13, 12, "Punctuator"], [3, 14, 13, "String"]])
         },
         {
 
