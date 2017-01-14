@@ -2683,7 +2683,15 @@ foo ?
         {
             code: "[sparse, , array];",
             options: [2, { ArrayExpression: "first" }]
-        }
+        },
+        {
+            code: `\
+foo.bar('baz', function(err) {
+  qux;
+});
+`,
+            options: [2, { CallExpression: { arguments: "first" } }]
+        },
     ],
 
 
@@ -5374,6 +5382,20 @@ foo ?
                 [6, 12, 4, "Identifier"],
                 [7, 12, 4, "Identifier"]
             ])
-        }
+        },
+        {
+            code: `\
+foo.bar('baz', function(err) {
+          qux;
+});
+`,
+            output: `\
+foo.bar('baz', function(err) {
+  qux;
+});
+`,
+            options: [2, { CallExpression: { arguments: "first" } }],
+            errors: expectedErrors([2, 2, 10, "Identifier"])
+        },
     ]
 });
