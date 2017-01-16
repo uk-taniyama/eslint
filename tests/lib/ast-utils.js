@@ -291,40 +291,60 @@ describe("ast-utils", () => {
         }
 
         it("should return false if it is not a directive line comment", () => {
-            eslint.reset();
-            eslint.on("LineComment", assertFalse);
-            eslint.verify("// lalala I'm a normal comment", {}, filename, true);
-            eslint.verify("// trying to confuse eslint ", {}, filename, true);
-            eslint.verify("//trying to confuse eslint-directive-detection", {}, filename, true);
-            eslint.verify("//eslint is awesome", {}, filename, true);
+            const code = [
+                "// lalala I'm a normal comment",
+                "// trying to confuse eslint ",
+                "//trying to confuse eslint-directive-detection",
+                "//eslint is awesome"
+            ].join("\n");
+            const ast = espree.parse(code, ESPREE_CONFIG);
+            const sourceCode = new SourceCode(code, ast);
+            const comments = sourceCode.getAllComments();
+
+            comments.forEach(assertFalse);
         });
 
         it("should return false if it is not a directive block comment", () => {
-            eslint.reset();
-            eslint.on("BlockComment", assertFalse);
-            eslint.verify("/* lalala I'm a normal comment */", {}, filename, true);
-            eslint.verify("/* trying to confuse eslint */", {}, filename, true);
-            eslint.verify("/* trying to confuse eslint-directive-detection */", {}, filename, true);
-            eslint.verify("/*eSlInT is awesome*/", {}, filename, true);
+            const code = [
+                "/* lalala I'm a normal comment */",
+                "/* trying to confuse eslint */",
+                "/* trying to confuse eslint-directive-detection */",
+                "/*eSlInT is awesome*/"
+            ].join("\n");
+            const ast = espree.parse(code, ESPREE_CONFIG);
+            const sourceCode = new SourceCode(code, ast);
+            const comments = sourceCode.getAllComments();
+
+            comments.forEach(assertFalse);
         });
 
         it("should return true if it is a directive line comment", () => {
-            eslint.reset();
-            eslint.on("LineComment", assertTrue);
-            eslint.verify("// eslint-disable-line no-undef", {}, filename, true);
-            eslint.verify("// eslint-secret-directive 4 8 15 16 23 42   ", {}, filename, true);
-            eslint.verify("// eslint-directive-without-argument", {}, filename, true);
-            eslint.verify("//eslint-directive-without-padding", {}, filename, true);
+            const code = [
+                "// eslint-disable-line no-undef",
+                "// eslint-secret-directive 4 8 15 16 23 42   ",
+                "// eslint-directive-without-argument",
+                "//eslint-directive-without-padding"
+            ].join("\n");
+            const ast = espree.parse(code, ESPREE_CONFIG);
+            const sourceCode = new SourceCode(code, ast);
+            const comments = sourceCode.getAllComments();
+
+            comments.forEach(assertTrue);
         });
 
         it("should return true if it is a directive block comment", () => {
-            eslint.reset();
-            eslint.on("BlockComment", assertTrue);
-            eslint.verify("/* eslint-disable no-undef", {}, filename, true);
-            eslint.verify("/*eslint-enable no-undef", {}, filename, true);
-            eslint.verify("/* eslint-env {\"es6\": true}", {}, filename, true);
-            eslint.verify("/* eslint foo", {}, filename, true);
-            eslint.verify("/*eslint bar", {}, filename, true);
+            const code = [
+                "/* eslint-disable no-undef */",
+                "/*eslint-enable no-undef*/",
+                "/* eslint-env {\"es6\": true} */",
+                "/* eslint foo */",
+                "/*eslint bar*/"
+            ].join("\n");
+            const ast = espree.parse(code, ESPREE_CONFIG);
+            const sourceCode = new SourceCode(code, ast);
+            const comments = sourceCode.getAllComments();
+
+            comments.forEach(assertTrue);
         });
     });
 
@@ -472,33 +492,33 @@ describe("ast-utils", () => {
     });
 
     describe("isComment", () => {
-        it("should return true for LineComment", () => {
+        it("should return true for Line comment", () => {
             const text = "// comment\nvar foo;";
             const ast = espree.parse(text, ESPREE_CONFIG);
             const sourceCode = new SourceCode(text, ast);
             const token = sourceCode.getAllComments()[0];
 
-            assert(token.type, "LineComment");
+            assert(token.type === "Line");
             assert(astUtils.isComment(token));
         });
 
-        it("should return true for BlockComment", () => {
+        it("should return true for Block comment", () => {
             const text = "/* comment */\nvar foo;";
             const ast = espree.parse(text, ESPREE_CONFIG);
             const sourceCode = new SourceCode(text, ast);
             const token = sourceCode.getAllComments()[0];
 
-            assert(token.type, "BlockComment");
+            assert(token.type === "Block");
             assert(astUtils.isComment(token));
         });
 
-        it("should return true for ShebangComment", () => {
+        it("should return true for Shebang comment", () => {
             const text = "#!/usr/bin/env node\nvar foo;";
             const ast = espree.parse(text.replace(/^#!([^\r\n]+)/, (match, captured) => `//${captured}`), ESPREE_CONFIG);
             const sourceCode = new SourceCode(text, ast);
             const token = sourceCode.getAllComments()[0];
 
-            assert(token.type, "ShebangComment");
+            assert(token.type === "Shebang");
             assert(astUtils.isComment(token));
         });
 
@@ -506,7 +526,7 @@ describe("ast-utils", () => {
             const ast = espree.parse("var foo;", ESPREE_CONFIG);
             const token = ast.tokens[0];
 
-            assert(token.type, "Keyword");
+            assert(token.type === "Keyword");
             assert(!astUtils.isComment(token));
         });
     });
